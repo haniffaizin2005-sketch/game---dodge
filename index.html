@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Dodge Pro</title>
+
+<style>
+body{
+    margin:0;
+    background:#0f172a;
+    overflow:hidden;
+    font-family:Arial;
+    color:white;
+}
+
+/* PLAYER */
+#player{
+    width:50px;
+    height:50px;
+    background:cyan;
+    position:absolute;
+    bottom:80px;
+    left:50%;
+    border-radius:10px;
+}
+
+/* ENEMY */
+.enemy{
+    width:35px;
+    height:35px;
+    background:red;
+    position:absolute;
+}
+
+/* BOSS */
+.boss{
+    width:80px;
+    height:80px;
+    background:purple;
+    position:absolute;
+}
+
+/* HUD */
+#hud{
+    position:absolute;
+    top:10px;
+    left:10px;
+}
+
+/* BOSS HP */
+#bossBar{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:8px;
+    background:#222;
+}
+#bossHP{
+    height:100%;
+    width:0%;
+    background:red;
+}
+
+/* CONTROL MOBILE */
+#controls{
+    position:absolute;
+    bottom:10px;
+    left:0;
+    right:0;
+    display:flex;
+    justify-content:space-between;
+    padding:0 30px;
+}
+
+.btn{
+    width:70px;
+    height:70px;
+    background:rgba(255,255,255,0.2);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:25px;
+}
+
+/* MENU */
+#menu{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.8);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+}
+</style>
+</head>
+
+<body>
+
+<div id="bossBar"><div id="bossHP"></div></div>
+
+<div id="hud">
+❤️ <span id="life">3</span>  
+🎯 <span id="score">0</span>
+</div>
+
+<div id="menu">
+<h1>Dodge Pro</h1>
+<button onclick="startGame()">PLAY</button>
+</div>
+
+<div id="player"></div>
+
+<div id="controls">
+<div class="btn" id="left">⬅️</div>
+<div class="btn" id="right">➡️</div>
+</div>
+
+<!-- SOUND -->
+<audio id="hit">
+<source src="https://www.soundjay.com/button/beep-07.wav">
+</audio>
+
+<script>
+let player = document.getElementById("player");
+let playerX = window.innerWidth/2;
+
+let moveLeft=false;
+let moveRight=false;
+
+let life=3;
+let score=0;
+let gameRunning=false;
+
+// START
+function startGame(){
+    gameRunning=true;
+    document.getElementById("menu").style.display="none";
+}
+
+// CONTROL TOUCH
+left.ontouchstart=()=>moveLeft=true;
+left.ontouchend=()=>moveLeft=false;
+
+right.ontouchstart=()=>moveRight=true;
+right.ontouchend=()=>moveRight=false;
+
+// KEYBOARD
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowLeft") moveLeft=true;
+if(e.key==="ArrowRight") moveRight=true;
+});
+document.addEventListener("keyup",e=>{
+if(e.key==="ArrowLeft") moveLeft=false;
+if(e.key==="ArrowRight") moveRight=false;
+});
+
+// PLAYER LOOP
+setInterval(()=>{
+if(!gameRunning) return;
+
+if(moveLeft) playerX-=5;
+if(moveRight) playerX+=5;
+
+if(playerX<0) playerX=0;
+if(playerX>window.innerWidth-50) playerX=window.innerWidth-50;
+
+player.style.left=playerX+"px";
+},16);
+
+// ENEMY
+function spawnEnemy(){
+if(!gameRunning) return;
+
+let e=document.createElement("div");
+e.className="enemy";
+
+let x=Math.random()*window.innerWidth;
+let y=0;
+
+document.body.appendChild(e);
+
+let fall=setInterval(()=>{
+y+=3;
+e.style.top=y+"px";
+e.style.left=x+"px";
+
+hit(e,fall);
+
+if(y>window.innerHeight){
+score++;
+updateUI();
+e.remove();
+clearInterval(fall);
+}
+},20);
+}
+
+// BOSS
+function spawnBoss(){
+let boss=document.createElement("div");
+boss.className="boss";
+
+let x=window.innerWidth/2;
+let y=0;
+let hp=20;
+
+document.body.appendChild(boss);
+bossHP.style.width="100%";
+
+let loop=setInterval(()=>{
+if(!gameRunning) return;
+
+if(x<playerX) x+=2;
+else x-=2;
+
+y+=2;
+
+boss.style.top=y+"px";
+boss.style.left=x+"px";
+
+// damage boss
+if(Math.abs(playerX-x)<60) hp--;
+
+bossHP.style.width=(hp/20*100)+"%";
+
+hit(boss,loop);
+
+if(hp<=0){
+score+=10;
+updateUI();
+boss.remove();
+bossHP.style.width="0%";
+clearInterval(loop);
+}
+},20);
+}
+
+// HIT
+function hit(obj,loop){
+let p=player.getBoundingClientRect();
+let o=obj.getBoundingClientRect();
+
+if(
+p.left<o.right &&
+p.right>o.left &&
+p.top<o.bottom &&
+p.bottom>o.top
+){
+life--;
+hitSound();
+
+obj.remove();
+clearInterval(loop);
+updateUI();
+
+if(life<=0){
+alert("Game Over Score: "+score);
+location.reload();
+}
+}
+}
+
+// SOUND
+function hitSound(){
+document.getElementById("hit").play();
+}
+
+// UI
+function updateUI(){
+lifeSpan.innerText=life;
+scoreSpan.innerText=score;
+}
+
+let lifeSpan=document.getElementById("life");
+let scoreSpan=document.getElementById("score");
+
+// LOOP
+setInterval(spawnEnemy,800);
+
+// boss tiap 10 score
+setInterval(()=>{
+if(score>0 && score%10===0){
+spawnBoss();
+}
+},3000);
+</script>
+
+</body>
+</html>
